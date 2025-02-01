@@ -682,3 +682,708 @@ dependencies {
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+package com.example.siswa.activities;
+
+import android.annotation.SuppressLint;
+import android.os.Bundle;
+import android.widget.TextView;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.example.siswa.R;
+
+public class HasilUnActivity extends AppCompatActivity {
+    TextView tvNISN,tvNama,tvIndo,tvInggris,tvMtk,tvKejuruan;
+    Bundle b;
+
+    @SuppressLint("MissingInflatedId")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_hasil_un);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+        tvNISN = findViewById(R.id.tv_hasil_un_nisn);
+        tvNama = findViewById(R.id.tv_hasil_un_nama);
+        tvIndo = findViewById(R.id.tv_hasil_un_indo);
+        tvInggris = findViewById(R.id.tv_hasil_un_inggris);
+        tvMtk = findViewById(R.id.tv_hasil_un_matematika);
+        tvKejuruan = findViewById(R.id.tv_hasil_un_kejuruan);
+
+        b = getIntent().getExtras();
+
+        if(b!=null){
+            tvNISN.setText(""+b.getInt("nisn"));
+            tvNama.setText(b.getString("nama"));
+            tvIndo.setText(""+b.getInt("indo"));
+            tvInggris.setText(""+b.getInt("inggris"));
+            tvMtk.setText(""+b.getInt("matematika"));
+            tvKejuruan.setText(""+b.getInt("kejuruan"));
+        }
+    }
+}
+package com.example.siswa.activities;
+
+import android.os.Bundle;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.example.siswa.R;
+import com.example.siswa.adapter.MenuAdapter;
+import com.example.siswa.model.Menu;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+
+    RecyclerView rvMenu;
+
+    int[]gambarMenu = {R.drawable.spp,R.drawable.pengumuman};
+    String[]namaMenu = {"SPP","Pengumuman UN"};
+    List<Menu>listMenu;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+        rvMenu = findViewById(R.id.rv_menu);
+
+        GridLayoutManager glm = new GridLayoutManager(this,2);
+        rvMenu.setLayoutManager(glm);
+
+        listMenu = new ArrayList<>();
+
+        for (int i = 0; i < gambarMenu.length; i++) {
+            Menu menu = new Menu(gambarMenu[i],namaMenu[i]);
+            listMenu.add(menu);
+        }
+        MenuAdapter adapter = new MenuAdapter(MainActivity.this,listMenu);
+        rvMenu.setAdapter(adapter);
+    }
+}
+package com.example.siswa.activities;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.example.siswa.R;
+import com.example.siswa.model.PengumumanUnResponse;
+import com.example.siswa.network.ServiceClient;
+import com.example.siswa.network.ServiceGenerator;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+public class PengumumanUnActivity extends AppCompatActivity {
+    private EditText etNis;
+    private ProgressBar progressBar;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_pengumuman_un);
+
+        // Inisialisasi View setelah setContentView
+        progressBar = findViewById(R.id.progress_pengumumanUN);
+        etNis = findViewById(R.id.et_nis_un);
+
+        // Mengatur insets untuk tampilan yang lebih responsif
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+    }
+
+    public void cekHasil(View view) {
+        String nis = etNis.getText().toString().trim();
+
+        // Validasi input NIS
+        if (nis.isEmpty()) {
+            Toast.makeText(this, "NIS tidak boleh kosong", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        progressBar.setVisibility(View.VISIBLE);
+
+        // Membuat request ke API
+        ServiceClient service = ServiceGenerator.createService(ServiceClient.class);
+        Call<PengumumanUnResponse> requestUN = service.requestHasilUN("un", "readPengumumanUN", nis);
+
+        requestUN.enqueue(new Callback<PengumumanUnResponse>() {
+            @Override
+            public void onResponse(Call<PengumumanUnResponse> call, Response<PengumumanUnResponse> response) {
+                progressBar.setVisibility(View.GONE);
+
+                if (response.body() != null && response.body().getHasilUN() != null) {
+                    if ("nis tidak ditemukan".equals(response.body().getHasilUN().getNama())) {
+                        Toast.makeText(PengumumanUnActivity.this, "NIS tidak ditemukan", Toast.LENGTH_SHORT).show();
+                    } else {
+                        // Menyiapkan data untuk dikirim ke Activity hasil
+                        Bundle b = new Bundle();
+                        b.putInt("nisn", response.body().getHasilUN().getNISN());
+                        b.putString("nama", response.body().getHasilUN().getNama());
+                        b.putInt("indo", response.body().getHasilUN().getBahasaIndonesia());
+                        b.putInt("inggris", response.body().getHasilUN().getBahasaInggris());
+                        b.putInt("matematika", response.body().getHasilUN().getMatematika());
+                        b.putInt("kejuruan", response.body().getHasilUN().getKejuruan());
+
+                        // Pindah ke Activity HasilUnActivity
+                        Intent i = new Intent(PengumumanUnActivity.this, HasilUnActivity.class);
+                        i.putExtras(b);
+                        startActivity(i);
+
+                        // Reset input NIS setelah berhasil
+                        etNis.setText("");
+                    }
+                } else {
+                    Toast.makeText(PengumumanUnActivity.this, "Terjadi kesalahan pada data", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<PengumumanUnResponse> call, Throwable throwable) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(PengumumanUnActivity.this, "Koneksi error", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+}
+package com.example.siswa.adapter;
+
+import android.content.Context;
+import android.content.Intent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+
+import com.example.siswa.R;
+import com.example.siswa.activities.PengumumanUnActivity;
+import com.example.siswa.activities.SppDetailActivity;
+import com.example.siswa.model.Menu;
+
+import java.util.List;
+
+public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.MenuViewHolder> {
+    private Context context;
+    private List<Menu> listMenu;
+
+    public MenuAdapter(Context context, List<Menu> listMenu) {
+        this.context = context;
+        this.listMenu = listMenu;
+    }
+
+    @NonNull
+    @Override
+    public MenuAdapter.MenuViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        View view = LayoutInflater.from(context).inflate(R.layout.item_menu, viewGroup, false);
+        return new MenuViewHolder(view);
+    }
+    public class MenuViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivGambarMenu;
+        TextView tvNamaMenu;
+        public MenuViewHolder(@NonNull View itemView) {
+            super(itemView);
+            ivGambarMenu = itemView.findViewById(R.id.iv_item_menu);
+            tvNamaMenu = itemView.findViewById(R.id.tv_item_menu);
+        }
+
+        public void bindItem(Menu menu){
+            ivGambarMenu.setImageResource(menu.getGambarMenu());
+            tvNamaMenu.setText(menu.getNamaMenu());
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    switch (menu.getNamaMenu()){
+                        case "SPP":
+                            context.startActivity(new Intent(context, SppDetailActivity.class));
+                            break;
+                        case "Pengumuman UN":
+                            context.startActivity(new Intent(context, PengumumanUnActivity.class));
+                            break;
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull MenuAdapter.MenuViewHolder holder, int position) {
+        holder.bindItem(listMenu.get(position));
+    }
+
+    @Override
+    public int getItemCount() {
+        return listMenu.size();
+    }
+
+}
+package com.example.siswa.model;
+
+import com.google.gson.annotations.SerializedName;
+
+public class HasilUN{
+
+	@SerializedName("Kejuruan")
+	private int kejuruan;
+
+	@SerializedName("NISN")
+	private int nISN;
+
+	@SerializedName("Bahasa Inggris")
+	private int bahasaInggris;
+
+	@SerializedName("Nama")
+	private String nama;
+
+	@SerializedName("Matematika")
+	private int matematika;
+
+	@SerializedName("Bahasa Indonesia")
+	private int bahasaIndonesia;
+
+	public void setKejuruan(int kejuruan){
+		this.kejuruan = kejuruan;
+	}
+
+	public int getKejuruan(){
+		return kejuruan;
+	}
+
+	public void setNISN(int nISN){
+		this.nISN = nISN;
+	}
+
+	public int getNISN(){
+		return nISN;
+	}
+
+	public void setBahasaInggris(int bahasaInggris){
+		this.bahasaInggris = bahasaInggris;
+	}
+
+	public int getBahasaInggris(){
+		return bahasaInggris;
+	}
+
+	public void setNama(String nama){
+		this.nama = nama;
+	}
+
+	public String getNama(){
+		return nama;
+	}
+
+	public void setMatematika(int matematika){
+		this.matematika = matematika;
+	}
+
+	public int getMatematika(){
+		return matematika;
+	}
+
+	public void setBahasaIndonesia(int bahasaIndonesia){
+		this.bahasaIndonesia = bahasaIndonesia;
+	}
+
+	public int getBahasaIndonesia(){
+		return bahasaIndonesia;
+	}
+
+	@Override
+ 	public String toString(){
+		return 
+			"HasilUN{" + 
+			"kejuruan = '" + kejuruan + '\'' + 
+			",nISN = '" + nISN + '\'' + 
+			",bahasa Inggris = '" + bahasaInggris + '\'' + 
+			",nama = '" + nama + '\'' + 
+			",matematika = '" + matematika + '\'' + 
+			",bahasa Indonesia = '" + bahasaIndonesia + '\'' + 
+			"}";
+		}
+}
+package com.example.siswa.model;
+
+import com.google.gson.annotations.SerializedName;
+
+public class PengumumanUnResponse{
+
+	@SerializedName("hasilUN")
+	private HasilUN hasilUN;
+
+	public void setHasilUN(HasilUN hasilUN){
+		this.hasilUN = hasilUN;
+	}
+
+	public HasilUN getHasilUN(){
+		return hasilUN;
+	}
+
+	@Override
+ 	public String toString(){
+		return 
+			"PengumumanUnResponse{" + 
+			"hasilUN = '" + hasilUN + '\'' + 
+			"}";
+		}
+}
+package com.example.siswa.network;
+
+import com.example.siswa.model.LoginResponse;
+import com.example.siswa.model.PengumumanUnResponse;
+import com.example.siswa.model.SppResponse;
+
+import retrofit2.Call;
+import retrofit2.http.Field;
+import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.Query;
+
+public interface ServiceClient {
+    @POST("exec")
+    @FormUrlEncoded
+    Call<LoginResponse> loginSiswa(@Field(value = "sheetName", encoded = true)String sheetName,
+                                                          @Field(value = "action", encoded = true)String action,
+                                                          @Field(value = "tingkatan", encoded = true)String tingkatan,
+                                                          @Field(value = "tahunAjaran", encoded = true)String tahunAjaran,
+                                                          @Field(value = "nis", encoded = true)String nis,
+                                                          @Field(value = "pass", encoded = true)String pass);
+
+
+    @GET("exec")
+    Call<SppResponse> readSpp(@Query("sheetName")String sheetName,
+                              @Query("action")String action,
+                              @Query("tingkatan")String tingkatan,
+                              @Query("tahunAjaran")String tahunAjaran,
+                              @Query("kelas")String kelas,
+                              @Query("nis")String nis);
+
+    @GET("exec")
+    Call<PengumumanUnResponse> requestHasilUN(@Query("sheetName")String sheetName,
+                                              @Query("action")String action,
+                                              @Query("nis")String nis);
+}
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activities.HasilUnActivity">
+
+    <TextView
+        android:text="Hasil UN"
+        android:textSize="50sp"
+        android:layout_marginTop="30dp"
+        android:layout_marginBottom="20dp"
+        android:layout_gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <LinearLayout
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="NISN"
+            android:layout_marginLeft="50dp"
+            android:textSize="20sp"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:text=":"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/tv_hasil_un_nisn"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Nama"
+            android:layout_marginLeft="50dp"
+            android:textSize="20sp"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:text=":"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/tv_hasil_un_nama"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Bahasa Indonesia"
+            android:layout_marginLeft="50dp"
+            android:textSize="20sp"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:text=":"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/tv_hasil_un_indo"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Bahasa Inggris"
+            android:layout_marginLeft="50dp"
+            android:textSize="20sp"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:text=":"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/tv_hasil_un_inggris"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Matematika"
+            android:layout_marginLeft="50dp"
+            android:textSize="20sp"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:text=":"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/tv_hasil_un_matematika"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Kejuruan"
+            android:layout_marginLeft="50dp"
+            android:textSize="20sp"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:text=":"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/tv_hasil_un_kejuruan"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+</LinearLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".activities.PengumumanUnActivity">
+
+    <TextView
+        android:text="Pengumuman UN"
+        android:textSize="30sp"
+        android:textColor="#000000"
+        android:layout_gravity="center"
+        android:layout_marginTop="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/et_nis_un"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="NIS"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:layout_marginTop="40dp"
+        android:layout_marginLeft="40dp"
+        android:layout_marginRight="40dp"
+        android:minHeight="48dp" />
+
+    <Button
+        android:id="@+id/btn_search_un"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="cekHasil"
+        android:text="Cek"
+        android:backgroundTint="#CCAB10"
+        android:textColor="#FFFFFF"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="40dp"
+        android:layout_marginRight="40dp"/>
+
+    <ProgressBar
+        android:id="@+id/progress_pengumumanUN"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
+
+</LinearLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_marginTop="4dp"
+    android:layout_marginRight="2dp"
+    android:layout_marginLeft="2dp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal">
+
+        <ImageView
+            android:id="@+id/iv_item_menu"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"/>
+
+        <TextView
+            android:id="@+id/tv_item_menu"
+            android:text="nama menu"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+</LinearLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Siswa"
+        tools:targetApi="31">
+        <activity
+            android:name=".activities.HasilUnActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.PengumumanUnActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.SppDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".activities.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Siswa" />
+
+        <service
+            android:name=".helper.TokenFirebase"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".helper.MyFirebaseMessage"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>
